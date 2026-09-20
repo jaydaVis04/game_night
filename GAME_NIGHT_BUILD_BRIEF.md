@@ -1,6 +1,6 @@
 # Game Night Leaderboard — Build Brief
 
-Status: analysis only. No implementation has been started or authorized yet.
+Current status: the user authorized the complete implementation and regular Git commits on September 20, 2026. The original analysis-only instruction below is retained as conversation history and has been superseded. See IMPLEMENTATION.md for the build decisions and README.md for operation.
 
 This document preserves the user's build brief for future work. The analysis notes after the brief are provisional considerations, not changes to the requirements or approved implementation decisions.
 

@@ -56,6 +56,8 @@ Data lives in `data/` beside the app: `database.sqlite`, saved `sounds/`, and a 
 - [Operations guide](docs/OPERATIONS.md): backups, restore, upgrades, forgotten passwords, environment settings, and Wi-Fi troubleshooting.
 - [Game configuration](docs/GAMES.md): add a game without rebuilding, theme fields, and original visual motifs.
 - [Architecture](docs/ARCHITECTURE.md): data, permissions, live updates, audio, and future Raspberry Pi startup.
+- [Verification](docs/VERIFICATION.md): passing tests, installer checks, and platform limits.
+- [Security review](docs/SECURITY_REVIEW.md): authorization, data integrity, and LAN boundaries.
 
 This app uses ordinary HTTP on a trusted home network. Keep it off the public internet; do not configure router port forwarding. Admin passwords and cookies are not encrypted in transit. Use a private Wi-Fi network whose devices you trust. All scripts, fonts, sound files, QR generation, and effects are served locally during play.
 
