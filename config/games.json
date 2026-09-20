@@ -1,0 +1,9 @@
+[
+  {"id":"monopoly","name":"Monopoly","themeKey":"monopoly","tagline":"Big deals. Bigger bragging rights.","motif":"dice","palette":{"background":"#E9EFE4","surface":"#FFFDF1","text":"#18392C","muted":"#4E6758","accent":"#AA302F","accentText":"#FFFFFF","secondary":"#A9C9A0"}},
+  {"id":"challengers","name":"Challengers","themeKey":"challengers","tagline":"One table. All the tournament energy.","motif":"tournament","palette":{"background":"#E6ECFE","surface":"#FFFFFF","text":"#142D63","muted":"#46567C","accent":"#224DDD","accentText":"#FFFFFF","secondary":"#FFA65B"}},
+  {"id":"coup","name":"Coup","themeKey":"coup","tagline":"Keep your friends close. Your cards closer.","motif":"cards","palette":{"background":"#251B38","surface":"#392B4E","text":"#FFF5DB","muted":"#CDC0D9","accent":"#EAC16A","accentText":"#271D35","secondary":"#AA86BF"}},
+  {"id":"poker","name":"Poker","themeKey":"poker","tagline":"A little luck. A very good poker face.","motif":"suits","palette":{"background":"#12392D","surface":"#204E3E","text":"#FFF7E1","muted":"#C0D2C1","accent":"#EDC36E","accentText":"#23392B","secondary":"#A5CFAD"}},
+  {"id":"among-us","name":"Among Us","themeKey":"among-us","tagline":"Trust is optional. Winning is everything.","motif":"space","palette":{"background":"#171C3D","surface":"#292E52","text":"#F7F3FF","muted":"#C5C7E6","accent":"#B8ABFF","accentText":"#211A48","secondary":"#EF8D96"}},
+  {"id":"mafia","name":"Murder Mafia","themeKey":"mafia","tagline":"When night falls, the stories begin.","motif":"spotlight","palette":{"background":"#211A20","surface":"#39242D","text":"#FFF0E8","muted":"#D7BDC2","accent":"#E99B9C","accentText":"#3C1924","secondary":"#B86778"}},
+  {"id":"clue","name":"Clue","themeKey":"clue","tagline":"Every good evening needs a little mystery.","motif":"mystery","palette":{"background":"#302337","surface":"#47334D","text":"#FFF2DF","muted":"#D8C3D3","accent":"#E4C388","accentText":"#36273D","secondary":"#C091A5"}}
+]
