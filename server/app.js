@@ -13,11 +13,15 @@ import { fail, textValue, nameKey, booleanValue, requestKey, credentials, valida
 import { lanAddresses, networkPolicy, validatePublicUrl, sessionMiddleware, requireAdmin, createSession, secretToken, equalSecret, rateLimit } from './security.js';
 import { createSoundRouter, createMediaRouter } from './sounds.js';
 
-export function createApplication({ dataDir = resolveDataDir(), port = 3000, host = '0.0.0.0', publicUrl, setupCode = secretToken().slice(0, 16) } = {}) {
+export function createApplication({ dataDir = resolveDataDir(), port = 3000, host = '0.0.0.0', publicUrl, setupCode = secretToken().slice(0, 16), shutdownGraceMs = 3000 } = {}) {
   publicUrl = validatePublicUrl(publicUrl);
   const db = openDatabase(dataDir);
   const app = express();
   const server = createServer(app);
+  server.headersTimeout = 15000;
+  server.requestTimeout = 30000;
+  server.keepAliveTimeout = 5000;
+  let shuttingDown = false;
   const sockets = new WebSocketServer({ noServer: true, maxPayload: 1024, perMessageDeflate: false });
   const policy = networkPolicy(publicUrl);
   const lanHost = lanAddresses()[0]?.address ?? '127.0.0.1';
@@ -68,6 +72,7 @@ export function createApplication({ dataDir = resolveDataDir(), port = 3000, hos
     crossOriginOpenerPolicy: { policy: 'same-origin' },
   }));
   app.use((req, res, next) => {
+    if (shuttingDown) return res.set('Connection', 'close').status(503).json({ error: 'Victory Club is shutting down. Reopen it to keep playing.' });
     if (!policy.validHost(req)) return res.status(403).json({ error: 'Use the local address printed by Victory Club.' });
     if (!['GET', 'HEAD', 'OPTIONS'].includes(req.method) && (req.get('X-Victory-Request') !== '1' || !policy.validOrigin(req))) {
       return res.status(403).json({ error: 'This request must come from Victory Club.' });
@@ -327,7 +332,7 @@ export function createApplication({ dataDir = resolveDataDir(), port = 3000, hos
     res.status(status).json({ error: status === 500 ? 'Something went wrong. Please try again.' : error.type === 'entity.parse.failed' ? 'The request contains invalid JSON.' : error.message });
   });
   server.on('upgrade', (req, socket, head) => {
-    if (req.url !== '/ws' || !req.headers.origin || !policy.validHost(req) || !policy.validOrigin(req)) {
+    if (shuttingDown || req.url !== '/ws' || !req.headers.origin || !policy.validHost(req) || !policy.validOrigin(req)) {
       socket.write('HTTP/1.1 403 Forbidden\r\nConnection: close\r\n\r\n');
       return socket.destroy();
     }
@@ -348,11 +353,21 @@ export function createApplication({ dataDir = resolveDataDir(), port = 3000, hos
   let closing;
   function close() {
     if (closing) return closing;
+    shuttingDown = true;
     closing = (async () => {
       clearInterval(heartbeat);
       for (const client of sockets.clients) client.terminate();
       await new Promise(resolve => sockets.close(resolve));
-      if (server.listening) await new Promise((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
+      if (server.listening) await new Promise((resolve, reject) => {
+        // Allow in-flight saves to finish, but do not let an abandoned upload hold the process lock.
+        const deadline = setTimeout(() => server.closeAllConnections(), shutdownGraceMs);
+        deadline.unref();
+        server.close(error => {
+          clearTimeout(deadline);
+          if (error) reject(error);
+          else resolve();
+        });
+      });
       db.close();
     })();
     return closing;

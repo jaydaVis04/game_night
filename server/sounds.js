@@ -7,8 +7,8 @@ import { resolve, join } from 'node:path';
 export function inspectWave(buffer) {
   const invalid = () => Object.assign(new Error('Choose an audio file and save a clip between 0.25 and 10 seconds.'), { status: 400 });
   if (!Buffer.isBuffer(buffer) || buffer.length < 44 || buffer.length > 4 * 1024 * 1024) throw invalid();
-  if (buffer.toString('ascii', 0, 4) !== 'RIFF' || buffer.toString('ascii', 8, 12) !== 'WAVE' ||
-      buffer.toString('ascii', 12, 16) !== 'fmt ' || buffer.toString('ascii', 36, 40) !== 'data') throw invalid();
+  if (buffer.toString('latin1', 0, 4) !== 'RIFF' || buffer.toString('latin1', 8, 12) !== 'WAVE' ||
+      buffer.toString('latin1', 12, 16) !== 'fmt ' || buffer.toString('latin1', 36, 40) !== 'data') throw invalid();
   const channels = buffer.readUInt16LE(22);
   const sampleRate = buffer.readUInt32LE(24);
   const length = buffer.readUInt32LE(40);
@@ -44,12 +44,12 @@ export function createSoundRouter({ db, dataDir, requireAdmin, broadcast }) {
     const id = randomUUID();
     const filename = `${id}.wav`;
     const path = join(directory, filename);
-    await writeFile(path, req.body, { flag: 'wx', mode: 0o600 });
     try {
+      await writeFile(path, req.body, { flag: 'wx', mode: 0o600 });
       db.prepare('INSERT INTO sounds (id,name,duration,filename,created_at) VALUES (?,?,?,?,?)')
         .run(id, name, duration, filename, new Date().toISOString());
     } catch (error) {
-      await unlink(path).catch(() => {});
+      if (error.code !== 'EEXIST') await unlink(path).catch(() => {});
       throw error;
     }
     broadcast({ type: 'changed' });
@@ -83,7 +83,9 @@ export function createMediaRouter({ db, dataDir }) {
     if (!row) return res.sendStatus(404);
     res.type('audio/wav');
     res.set('Cache-Control', 'private, max-age=3600');
-    res.sendFile(resolve(dataDir, 'sounds', row.filename), (error) => { if (error) next(error); });
+    res.sendFile(resolve(dataDir, 'sounds', row.filename), (error) => {
+      if (error) next(Object.assign(new Error('That sound is no longer available.'), { status: 404 }));
+    });
   });
   return router;
 }

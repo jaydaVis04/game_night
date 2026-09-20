@@ -5,12 +5,14 @@ import path from 'node:path';
 import { tmpdir } from 'node:os';
 import { randomUUID } from 'node:crypto';
 import { once } from 'node:events';
+import { request as httpRequest } from 'node:http';
+import { connect } from 'node:net';
 import WebSocket from 'ws';
 import { createApplication } from '../server/app.js';
 
-async function fixture(t) {
+async function fixture(t, options = {}) {
   const dataDir = await mkdtemp(path.join(tmpdir(), 'victory-backend-'));
-  let application = createApplication({ dataDir, port: 0, setupCode: 'test-setup-secret' });
+  let application = createApplication({ dataDir, port: 0, setupCode: 'test-setup-secret', ...options });
   await new Promise(resolve => application.server.listen(0, '127.0.0.1', resolve));
   let base = `http://127.0.0.1:${application.server.address().port}`;
   let cookie = '';
@@ -29,7 +31,7 @@ async function fixture(t) {
     request, setup, get application() { return application; }, get base() { return base; },
     restart: async () => {
       await application.close();
-      application = createApplication({ dataDir, port: 0, setupCode: 'test-setup-secret' });
+      application = createApplication({ dataDir, port: 0, setupCode: 'test-setup-secret', ...options });
       await new Promise(resolve => application.server.listen(0, '127.0.0.1', resolve));
       base = `http://127.0.0.1:${application.server.address().port}`;
     },
@@ -230,4 +232,89 @@ test('parallel requests: idempotent wins and independent joins do not lose data'
   const joins = await Promise.all(Array.from({ length: 8 }, (_, i) => f.request(`/api/join/${code}`, { name: `Guest ${i}`, requestId: randomUUID() }, { admin: false })));
   assert.ok(joins.every(response => response.status === 201));
   assert.equal((await f.request('/api/joins')).body.requests.length, 8);
+});
+
+test('public boundary: every privileged mutation is guarded and snapshots omit credentials and pending names', async t => {
+  const f = await fixture(t);
+  await f.setup();
+  const code = (await f.request('/api/state')).body.night.code;
+  const pending = (await f.request(`/api/join/${code}`, { name: 'Private Pending Name', requestId: randomUUID() }, { admin: false })).body.request;
+  for (const [method, url] of [
+    ['POST', '/api/admins'], ['POST', '/api/players'], ['PATCH', '/api/players/nonexistent'],
+    ['POST', '/api/players/nonexistent/attendance'], ['POST', '/api/night/game'],
+    ['POST', '/api/night/new'], ['POST', '/api/night/leader'], ['POST', '/api/wins'],
+    ['POST', '/api/wins/nonexistent/undo'], ['PATCH', '/api/settings'], ['POST', '/api/games'],
+    ['PATCH', '/api/games/nonexistent'], ['POST', `/api/joins/${pending.id}/resolve`],
+    ['POST', '/api/sounds'], ['DELETE', '/api/sounds/nonexistent'],
+  ]) {
+    assert.equal((await f.request(url, {}, { method, admin: false })).status, 401, `${method} ${url}`);
+  }
+  const state = (await f.request('/api/state', undefined, { admin: false })).body;
+  const serialized = JSON.stringify(state);
+  for (const secret of ['password_hash', 'token_hash', 'test-setup-secret', pending.token, 'Private Pending Name', 'a-strong-local-password']) {
+    assert.equal(serialized.includes(secret), false, `public snapshot should omit ${secret}`);
+  }
+  assert.equal((await f.request('/api/auth/me', undefined, { admin: false })).body.admin, null);
+  assert.equal((await f.request('/api/history', undefined, { admin: false })).status, 401);
+  const qr = await f.request('/api/qr', undefined, { admin: false });
+  assert.equal(qr.status, 200);
+  assert.match(qr.headers.get('content-type'), /image\/svg\+xml/);
+  assert.match(qr.body, /^<svg/);
+  const invalidHostStatus = await new Promise((resolve, reject) => {
+    const request = httpRequest(`${f.base}/api/state`, { headers: { Host: 'rebinding.invalid' } }, response => {
+      response.resume();
+      resolve(response.statusCode);
+    });
+    request.on('error', reject);
+    request.end();
+  });
+  assert.equal(invalidHostStatus, 403);
+});
+
+test('shutdown: abandoned request bodies cannot hold the database open past the grace period', async t => {
+  const f = await fixture(t, { shutdownGraceMs: 75 });
+  const socket = connect(f.application.server.address().port, '127.0.0.1');
+  socket.on('error', () => {});
+  t.after(() => socket.destroy());
+  await once(socket, 'connect');
+  const received = once(f.application.server, 'request');
+  socket.write(`POST /api/auth/login HTTP/1.1\r\nHost: ${new URL(f.base).host}\r\nX-Victory-Request: 1\r\nContent-Type: application/json\r\nContent-Length: 200\r\n\r\n{`);
+  await received;
+  const started = Date.now();
+  await f.application.close();
+  assert.ok(Date.now() - started >= 60, 'allows the configured grace period');
+  assert.ok(Date.now() - started < 1000, 'forces an abandoned connection closed');
+  assert.throws(() => f.application.db.prepare('SELECT 1'), /not open/);
+});
+
+test('shutdown: an in-flight account save completes before the database closes', async t => {
+  const f = await fixture(t, { shutdownGraceMs: 2000 });
+  const received = once(f.application.server, 'request');
+  const saving = f.setup();
+  await received;
+  const closing = f.application.close();
+  assert.equal((await saving).status, 201);
+  await closing;
+  await f.restart();
+  assert.equal((await f.request('/api/auth/me')).body.admin.username, 'Host');
+});
+
+test('abuse limits: setup attempts and public joins are throttled without trusting forwarded IP headers', async t => {
+  const f = await fixture(t);
+  for (let attempt = 0; attempt < 20; attempt++) {
+    const response = await f.request('/api/auth/setup', {
+      username: 'Host', password: 'a-strong-local-password', setupCode: 'incorrect',
+    }, { headers: { 'X-Forwarded-For': `192.0.2.${attempt + 1}` } });
+    assert.equal(response.status, 403);
+  }
+  const blocked = await f.setup();
+  assert.equal(blocked.status, 429);
+  assert.ok(Number(blocked.headers.get('retry-after')) > 0);
+  const code = (await f.request('/api/state')).body.night.code;
+  const operation = { name: 'A guest', requestId: randomUUID() };
+  for (let attempt = 0; attempt < 30; attempt++) {
+    assert.equal((await f.request(`/api/join/${code}`, operation, { admin: false })).status, attempt === 0 ? 201 : 200);
+  }
+  assert.equal((await f.request(`/api/join/${code}`, operation, { admin: false })).status, 429);
+  assert.equal(f.application.db.prepare('SELECT COUNT(*) AS count FROM join_requests').get().count, 1);
 });

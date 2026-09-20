@@ -44,6 +44,11 @@ test('rejects malformed, forged, unsupported and overlong uploads', () => {
     cases.push(corrupt);
   }
   cases.push(Buffer.concat([original, Buffer.from([0])]));
+  for (const offset of [0, 8, 12, 36]) {
+    const corrupt = Buffer.from(original);
+    for (let index = offset; index < offset + 4; index++) corrupt[index] |= 0x80;
+    cases.push(corrupt);
+  }
   for (const file of cases) assert.throws(() => inspectWave(file), { status: 400 });
 });
 

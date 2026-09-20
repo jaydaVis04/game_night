@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, readFile } from 'node:fs/promises';
+import { mkdtemp, rm, readFile, unlink } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { createApplication } from '../server/app.js';
@@ -42,6 +42,10 @@ test('saved sounds: authentication, bounded files, persistence, playback, select
   const playback = await fetch(base + sound.url);
   assert.match(playback.headers.get('content-type'), /audio\/wav/);
   assert.deepEqual(Buffer.from(await playback.arrayBuffer()), wave);
+  await unlink(join(dataDir, 'sounds', `${sound.id}.wav`));
+  const missing = await fetch(base + sound.url);
+  assert.equal(missing.status, 404);
+  assert.equal((await missing.json()).error, 'That sound is no longer available.');
   assert.equal((await fetch(`${base}/api/sounds/${sound.id}`, { method: 'DELETE', headers: { Cookie: cookie, 'X-Victory-Request': '1' } })).status, 200);
   const after = await (await fetch(`${base}/api/state`)).json();
   assert.deepEqual(after.sounds, []);
