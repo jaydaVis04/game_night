@@ -15,19 +15,32 @@ let stopping = false;
 async function stop(exitCode = 0) {
   if (stopping) return;
   stopping = true;
-  try { if (application) await application.close(); }
-  catch (error) { console.error('Could not close cleanly:', error.message); exitCode = 1; }
-  finally { releaseLock?.(); process.exitCode = exitCode; }
+  try {
+    if (application) await application.close();
+  } catch (error) {
+    console.error('Could not close cleanly:', error.message);
+    exitCode = 1;
+  } finally {
+    releaseLock?.();
+    process.exitCode = exitCode;
+  }
 }
 
 try {
   const dataDir = resolveDataDir();
   releaseLock = acquireServerLock(dataDir);
-  application = createApplication({ dataDir, port, host, publicUrl: process.env.VICTORY_PUBLIC_URL });
-  application.server.once('error', error => {
-    console.error(error.code === 'EADDRINUSE'
-      ? `Port ${port} is already in use. Close the other server or set PORT to another number.`
-      : `Victory Club could not start: ${error.message}`);
+  application = createApplication({
+    dataDir,
+    port,
+    host,
+    publicUrl: process.env.VICTORY_PUBLIC_URL,
+  });
+  application.server.once('error', (error) => {
+    console.error(
+      error.code === 'EADDRINUSE'
+        ? `Port ${port} is already in use. Close the other server or set PORT to another number.`
+        : `Victory Club could not start: ${error.message}`,
+    );
     void stop(1);
   });
   application.server.listen(port, host, () => {
@@ -41,8 +54,12 @@ try {
     }
     console.log('\n  Keep this window open while you play. Press Ctrl+C to stop.\n');
   });
-  process.once('SIGINT', () => { void stop(); });
-  process.once('SIGTERM', () => { void stop(); });
+  process.once('SIGINT', () => {
+    void stop();
+  });
+  process.once('SIGTERM', () => {
+    void stop();
+  });
 } catch (error) {
   console.error(`Victory Club could not start: ${error.message}`);
   await stop(1);

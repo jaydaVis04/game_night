@@ -15,7 +15,16 @@ const JoinPage = lazy(() => import('./components/JoinPage.jsx'));
 const joinMatch = location.pathname.match(/^\/join\/([^/]+)\/?$/);
 
 createRoot(document.getElementById('root')).render(
-  <React.StrictMode><Suspense fallback={<div className="loading-page"><span className="loading-die">⚄</span><p>Setting the table…</p></div>}>
-    {joinMatch ? <JoinPage code={decodeURIComponent(joinMatch[1])} /> : <App />}
-  </Suspense></React.StrictMode>,
+  <React.StrictMode>
+    <Suspense
+      fallback={
+        <div className="loading-page">
+          <span className="loading-die">⚄</span>
+          <p>Setting the table…</p>
+        </div>
+      }
+    >
+      {joinMatch ? <JoinPage code={decodeURIComponent(joinMatch[1])} /> : <App />}
+    </Suspense>
+  </React.StrictMode>,
 );

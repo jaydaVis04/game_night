@@ -20,7 +20,7 @@ export function useVictory(onEvent) {
       if (request === latest.current) {
         setState(snapshot);
         setAdmin(auth.admin);
-        setJoins(pending.filter(join => join.status === 'pending'));
+        setJoins(pending.filter((join) => join.status === 'pending'));
         setError('');
       }
     } catch (err) {
@@ -36,8 +36,14 @@ export function useVictory(onEvent) {
     let debounce;
     const connect = () => {
       if (!active) return;
-      socket = new WebSocket(`${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`);
-      socket.onopen = () => { attempts = 0; setConnected(true); refresh(); };
+      socket = new WebSocket(
+        `${location.protocol === 'https:' ? 'wss:' : 'ws:'}//${location.host}/ws`,
+      );
+      socket.onopen = () => {
+        attempts = 0;
+        setConnected(true);
+        refresh();
+      };
       socket.onmessage = ({ data }) => {
         try {
           const event = JSON.parse(data);
@@ -45,7 +51,9 @@ export function useVictory(onEvent) {
             clearTimeout(debounce);
             debounce = setTimeout(refresh, 70);
           } else eventRef.current(event);
-        } catch { /* Ignore an incomplete event; the next snapshot repairs state. */ }
+        } catch {
+          /* Ignore an incomplete event; the next snapshot repairs state. */
+        }
       };
       socket.onerror = () => socket.close();
       socket.onclose = () => {
@@ -57,7 +65,9 @@ export function useVictory(onEvent) {
     refresh();
     connect();
     const poll = setInterval(refresh, 30000);
-    const visibility = () => { if (document.visibilityState === 'visible') refresh(); };
+    const visibility = () => {
+      if (document.visibilityState === 'visible') refresh();
+    };
     document.addEventListener('visibilitychange', visibility);
     return () => {
       active = false;

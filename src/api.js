@@ -4,7 +4,9 @@ export async function api(path, options = {}) {
   let response;
   try {
     response = await fetch(`/api${path}`, {
-      credentials: 'same-origin', ...options, headers,
+      credentials: 'same-origin',
+      ...options,
+      headers,
       body: options.body === undefined ? undefined : JSON.stringify(options.body),
       signal: options.signal || AbortSignal.timeout(15000),
     });
@@ -23,9 +25,17 @@ export async function api(path, options = {}) {
 }
 
 export function requestId() {
-  return globalThis.crypto?.randomUUID?.() || `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`;
+  return (
+    globalThis.crypto?.randomUUID?.() ||
+    `${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+  );
 }
 
 export function friendlyDate(value) {
-  return new Intl.DateTimeFormat(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' }).format(new Date(value));
+  return new Intl.DateTimeFormat(undefined, {
+    month: 'short',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(new Date(value));
 }

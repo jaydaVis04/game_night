@@ -6,10 +6,13 @@ import { inspectWave } from '../server/sounds.js';
 function fixture({ duration = 12, sampleRate = 8000, channels = 2 } = {}) {
   const length = duration * sampleRate;
   return {
-    sampleRate, length, numberOfChannels: channels,
+    sampleRate,
+    length,
+    numberOfChannels: channels,
     getChannelData(channel) {
       const data = new Float32Array(length);
-      for (let frame = 0; frame < length; frame += 1) data[frame] = channel === 0 ? frame / length : -(frame / length);
+      for (let frame = 0; frame < length; frame += 1)
+        data[frame] = channel === 0 ? frame / length : -(frame / length);
       return data;
     },
   };
@@ -37,7 +40,11 @@ test('rejects oversized selections before allocation', () => {
 
 test('rejects malformed, forged, unsupported and overlong uploads', () => {
   const original = Buffer.from(encodeWave(fixture(), 0, 1));
-  const cases = [Buffer.from('<script>alert(1)</script>'), Buffer.alloc(0), original.subarray(0, 43)];
+  const cases = [
+    Buffer.from('<script>alert(1)</script>'),
+    Buffer.alloc(0),
+    original.subarray(0, 43),
+  ];
   for (const offset of [0, 4, 8, 12, 16, 20, 22, 24, 28, 32, 34, 36, 40]) {
     const corrupt = Buffer.from(original);
     corrupt.writeUInt32LE(0xffffffff, offset);
@@ -53,7 +60,14 @@ test('rejects malformed, forged, unsupported and overlong uploads', () => {
 });
 
 test('samples are clipped to PCM range and extra channels are omitted', () => {
-  const source = { sampleRate: 8000, length: 2000, numberOfChannels: 3, getChannelData(channel) { return new Float32Array(2000).fill(channel === 0 ? 3 : -3); } };
+  const source = {
+    sampleRate: 8000,
+    length: 2000,
+    numberOfChannels: 3,
+    getChannelData(channel) {
+      return new Float32Array(2000).fill(channel === 0 ? 3 : -3);
+    },
+  };
   const wave = Buffer.from(encodeWave(source, 0, 0.25));
   assert.equal(inspectWave(wave).channels, 2);
   assert.equal(wave.readInt16LE(44), 32767);

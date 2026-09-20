@@ -41,14 +41,17 @@ export function openDatabase(dataDir = resolveDataDir()) {
   const databasePath = path.join(dataDir, 'database.sqlite');
   const db = new DatabaseSync(databasePath);
   chmodSync(databasePath, 0o600);
-  db.exec('PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;');
+  db.exec(
+    'PRAGMA foreign_keys=ON; PRAGMA journal_mode=WAL; PRAGMA synchronous=NORMAL; PRAGMA busy_timeout=5000;',
+  );
   const version = db.prepare('PRAGMA user_version').get().user_version;
   if (version > 1) {
     db.close();
     throw new Error('This database needs a newer version of Victory Club.');
   }
-  if (version < 1) transaction(db, () => {
-    db.exec(`
+  if (version < 1)
+    transaction(db, () => {
+      db.exec(`
       CREATE TABLE players (
         id TEXT PRIMARY KEY, name TEXT NOT NULL, name_key TEXT NOT NULL,
         total_wins INTEGER NOT NULL DEFAULT 0 CHECK(total_wins >= 0),
@@ -100,30 +103,48 @@ export function openDatabase(dataDir = resolveDataDir()) {
       ) STRICT;
       PRAGMA user_version=1;
     `);
-  });
+    });
   try {
     const config = JSON.parse(readFileSync(path.join(projectRoot, 'config/games.json'), 'utf8'));
-    if (!Array.isArray(config) || !config.length) throw new Error('config/games.json must contain games.');
+    if (!Array.isArray(config) || !config.length)
+      throw new Error('config/games.json must contain games.');
     const seen = new Set();
-    const games = config.map(data => {
+    const games = config.map((data) => {
       const game = validateGame(data);
       if (seen.has(game.id)) throw new Error(`Duplicate game ID: ${game.id}`);
       seen.add(game.id);
       return game;
     });
     transaction(db, () => {
-      const upsert = db.prepare(`INSERT INTO games (id,name,theme_key,tagline,motif,palette,archived,config_hash) VALUES (?,?,?,?,?,?,?,?)
+      const upsert =
+        db.prepare(`INSERT INTO games (id,name,theme_key,tagline,motif,palette,archived,config_hash) VALUES (?,?,?,?,?,?,?,?)
         ON CONFLICT(id) DO UPDATE SET name=excluded.name,theme_key=excluded.theme_key,tagline=excluded.tagline,
           motif=excluded.motif,palette=excluded.palette,archived=excluded.archived,config_hash=excluded.config_hash
         WHERE games.config_hash IS NOT excluded.config_hash`);
       for (const game of games) {
         const hash = createHash('sha256').update(JSON.stringify(game)).digest('hex');
-        upsert.run(game.id, game.name, game.themeKey, game.tagline, game.motif, JSON.stringify(game.palette), Number(game.archived), hash);
+        upsert.run(
+          game.id,
+          game.name,
+          game.themeKey,
+          game.tagline,
+          game.motif,
+          JSON.stringify(game.palette),
+          Number(game.archived),
+          hash,
+        );
       }
       const set = db.prepare('INSERT OR IGNORE INTO settings(key,value) VALUES (?,?)');
-      for (const [key, value] of Object.entries({ currentlyWinning: false, soundId: 'default', celebrationSeconds: 10 })) set.run(key, JSON.stringify(value));
+      for (const [key, value] of Object.entries({
+        currentlyWinning: false,
+        soundId: 'default',
+        celebrationSeconds: 10,
+      }))
+        set.run(key, JSON.stringify(value));
       if (!db.prepare('SELECT id FROM nights WHERE ended_at IS NULL').get()) newNight(db);
-      db.prepare('UPDATE nights SET game_id=NULL,leader_id=NULL WHERE ended_at IS NULL AND game_id IN (SELECT id FROM games WHERE archived=1)').run();
+      db.prepare(
+        'UPDATE nights SET game_id=NULL,leader_id=NULL WHERE ended_at IS NULL AND game_id IN (SELECT id FROM games WHERE archived=1)',
+      ).run();
       db.prepare('DELETE FROM sessions WHERE expires_at < ?').run(new Date().toISOString());
     });
     return db;

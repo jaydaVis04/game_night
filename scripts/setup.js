@@ -9,7 +9,11 @@ try {
   db = openDatabase(dataDir);
   const admins = db.prepare('SELECT COUNT(*) AS count FROM admins').get().count;
   console.log(`\nVictory Club is ready.\nData: ${dataDir}`);
-  console.log(admins ? 'Existing players, history, and admin accounts have been preserved.' : 'Start the server, then use its setup code to create your first host account.');
+  console.log(
+    admins
+      ? 'Existing players, history, and admin accounts have been preserved.'
+      : 'Start the server, then use its setup code to create your first host account.',
+  );
   console.log('Launch: npm start\n');
 } catch (error) {
   console.error(`Setup could not finish: ${error.message}`);

@@ -28,30 +28,50 @@ try {
   snapshot = new DatabaseSync(join(incomplete, 'database.sqlite'), { readOnly: true });
   const integrity = snapshot.prepare('PRAGMA integrity_check').get().integrity_check;
   if (integrity !== 'ok') throw new Error(`Database integrity check failed: ${integrity}`);
-  const sounds = snapshot.prepare('SELECT id, name, filename, duration FROM sounds ORDER BY id').all();
+  const sounds = snapshot
+    .prepare('SELECT id, name, filename, duration FROM sounds ORDER BY id')
+    .all();
   for (const sound of sounds) {
-    if (basename(sound.filename) !== sound.filename || !sound.filename.endsWith('.wav')) throw new Error(`Invalid stored audio filename for ${sound.id}.`);
-    await copyFile(join(dataDir, 'sounds', sound.filename), join(incomplete, 'sounds', sound.filename));
+    if (basename(sound.filename) !== sound.filename || !sound.filename.endsWith('.wav'))
+      throw new Error(`Invalid stored audio filename for ${sound.id}.`);
+    await copyFile(
+      join(dataDir, 'sounds', sound.filename),
+      join(incomplete, 'sounds', sound.filename),
+    );
     await chmod(join(incomplete, 'sounds', sound.filename), 0o600);
   }
-  await copyFile(fileURLToPath(new URL('../config/games.json', import.meta.url)), join(incomplete, 'games-config.json'));
-  await writeFile(join(incomplete, 'backup.json'), `${JSON.stringify({
-    format: 1,
-    createdAt: new Date().toISOString(),
-    application: 'Victory Club',
-    nodeVersion: process.version,
-    soundClips: sounds.length,
-    players: snapshot.prepare('SELECT COUNT(*) AS count FROM players').get().count,
-    wins: snapshot.prepare('SELECT COUNT(*) AS count FROM wins').get().count,
-  }, null, 2)}\n`, { mode: 0o600 });
+  await copyFile(
+    fileURLToPath(new URL('../config/games.json', import.meta.url)),
+    join(incomplete, 'games-config.json'),
+  );
+  await writeFile(
+    join(incomplete, 'backup.json'),
+    `${JSON.stringify(
+      {
+        format: 1,
+        createdAt: new Date().toISOString(),
+        application: 'Victory Club',
+        nodeVersion: process.version,
+        soundClips: sounds.length,
+        players: snapshot.prepare('SELECT COUNT(*) AS count FROM players').get().count,
+        wins: snapshot.prepare('SELECT COUNT(*) AS count FROM wins').get().count,
+      },
+      null,
+      2,
+    )}\n`,
+    { mode: 0o600 },
+  );
   snapshot.close();
   snapshot = null;
   await rename(incomplete, destination);
   incomplete = null;
-  console.log(`Backup complete: ${destination}\nIncludes the database, ${sounds.length} saved sound clip(s), and a copy of game configuration.\nStore a copy on another drive. See docs/OPERATIONS.md for restoring.`);
+  console.log(
+    `Backup complete: ${destination}\nIncludes the database, ${sounds.length} saved sound clip(s), and a copy of game configuration.\nStore a copy on another drive. See docs/OPERATIONS.md for restoring.`,
+  );
 } catch (error) {
   console.error(`Backup failed: ${error.message}`);
-  if (incomplete) console.error(`An unfinished backup was left at ${incomplete}. Do not use it for restoration.`);
+  if (incomplete)
+    console.error(`An unfinished backup was left at ${incomplete}. Do not use it for restoration.`);
   process.exitCode = 1;
 } finally {
   snapshot?.close();
