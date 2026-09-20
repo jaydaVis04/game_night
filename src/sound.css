@@ -1,0 +1,61 @@
+.soundboard { --sound-ink: #29223d; color: var(--sound-ink); background: #fff; border-radius: 16px; padding: 18px; }
+.soundboard h3, .soundboard h4 { margin: 0; font-family: 'Bricolage Grotesque', sans-serif; }
+.soundboard p { line-height: 1.6; color: #625a75; }
+.sound-intro h3 { font-size: 1.6rem; }
+.sound-upload { position: relative; display: flex; align-items: center; gap: 18px; min-height: 115px; padding: 22px; border: 2px dashed #c9c0e7; border-radius: 18px; background: #f7f5fd; cursor: pointer; margin: 22px 0; }
+.sound-upload:hover, .sound-upload:focus-within { border-color: #6654d9; }
+.sound-upload-symbol { font-size: 38px; color: #6654d9; }
+.sound-upload strong { display: block; font-size: 16px; }
+.sound-upload small { display: block; color: #625a75; margin-top: 5px; line-height: 1.5; }
+.sound-upload input { position: absolute; inset: 0; opacity: 0; width: 100%; cursor: pointer; }
+.sound-upload.is-busy { opacity: .6; }
+.sound-editor { border: 1px solid #ddd6ee; border-radius: 18px; padding: 22px; margin-bottom: 24px; background: #fff; }
+.sound-editor-heading { display: flex; align-items: center; justify-content: space-between; gap: 14px; }
+.sound-editor-heading h4 { font-size: 1.3rem; }
+.sound-editor-heading span { white-space: nowrap; background: #eee9fc; color: #51439c; padding: 6px 10px; border-radius: 8px; font-size: 13px; font-weight: 700; }
+.wave-track { position: relative; height: 115px; margin: 28px 14px; border-radius: 12px; background: #efedf5; }
+.wave-canvas { width: 100%; height: 100%; display: block; }
+.wave-selection { position: absolute; top: 0; height: 100%; background: #6654d918; border-top: 3px solid #6654d9; border-bottom: 3px solid #6654d9; pointer-events: none; }
+.wave-handle { position: absolute; top: -6px; bottom: -6px; width: 30px; min-width: 30px; transform: translateX(-50%); background: #6654d9; color: white; border: 3px solid #fff; border-radius: 9px; padding: 0; cursor: ew-resize; touch-action: none; z-index: 1; }
+.wave-handle:focus-visible { outline: 3px solid #29223d; outline-offset: 3px; z-index: 2; }
+.wave-handle span { font-size: 17px; }
+.sound-time-fields { display: flex; gap: 12px; align-items: end; flex-wrap: wrap; }
+.sound-time-fields label { flex: 1 1 100px; }
+.soundboard label:not(.sound-upload) { font-size: 13px; font-weight: 700; }
+.soundboard input:not([type=file]) { display: block; margin-top: 7px; width: 100%; min-height: 44px; border: 1px solid #ccc4de; border-radius: 10px; padding: 10px 12px; background: #fff; color: #29223d; font: inherit; }
+.sound-name { display: block; margin-top: 18px; }
+.sound-editor-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+.sound-button { border: 1px solid #d9d2e8; background: #fff; color: #51439c; border-radius: 10px; min-height: 44px; padding: 10px 14px; cursor: pointer; font: inherit; font-size: 13px; font-weight: 700; }
+.sound-button:hover { background: #f1edfb; }
+.sound-button-primary { background: #6654d9; color: #fff; border-color: #6654d9; }
+.sound-button-primary:hover { background: #5645c5; }
+.sound-button:disabled { cursor: default; opacity: .65; }
+.sound-library { display: grid; gap: 10px; }
+.sound-item { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; border: 1px solid #e0dbea; border-radius: 14px; padding: 13px; background: #fff; }
+.sound-item.selected { border-color: #8573de; background: #f7f5ff; }
+.sound-preview { display: grid; place-items: center; width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 50%; background: #ebe5fb; color: #5945bc; cursor: pointer; }
+.sound-description { flex: 1; min-width: 100px; overflow-wrap: anywhere; }
+.sound-description strong { display: block; font-size: 14px; }
+.sound-description span { display: block; color: #625a75; font-size: 12px; margin-top: 3px; }
+.sound-remove { background: none; border: none; color: #806f8f; font-size: 26px; width: 44px; height: 44px; cursor: pointer; }
+.sound-delete-confirm { flex: 1 0 100%; display: flex; gap: 10px; align-items: center; justify-content: flex-end; flex-wrap: wrap; font-size: 13px; }
+.sound-error { background: #fff0ed; color: #a83227 !important; border-radius: 10px; padding: 12px 16px; }
+.celebration { position: fixed; z-index: 200; inset: 0; margin: 0; width: 100%; height: 100%; max-width: none; max-height: none; border: 0; background: #302451f5; color: #fff9ef; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 40px 24px; text-align: center; backdrop-filter: blur(12px); overflow: auto; }
+.celebration::backdrop { background: #30245190; }
+.celebration-center { position: relative; max-width: 850px; }
+.celebration-trophy { width: 120px; height: 120px; margin: 0 auto 16px; }
+.celebration-overline { color: #e1d5ff; font-size: 18px; }
+.celebration h2 { font-family: 'Bricolage Grotesque', sans-serif; font-size: clamp(40px, 7vw, 88px); line-height: 1.06; letter-spacing: -.045em; margin: 22px 0; overflow-wrap: anywhere; }
+.celebration h2 span { color: #f4ca5f; }
+.celebration-game { font-size: 20px; color: #e1d5ff; }
+.celebration-close { position: absolute; top: 24px; right: 24px; color: #fff; background: #ffffff16; border: 1px solid #ffffff40; border-radius: 50%; width: 48px; height: 48px; font-size: 32px; cursor: pointer; }
+.celebration-footer { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; position: relative; margin-top: 36px; }
+.celebration-footer p { flex-basis: 100%; }
+.celebration-footer button { color: #fff; border: 1px solid #ffffff60; background: #ffffff14; padding: 12px 22px; min-height: 48px; border-radius: 100px; font: inherit; cursor: pointer; }
+.celebration-footer button:first-of-type { color: #302451; background: #fff9ef; }
+.celebration-confetti { position: absolute; inset: 0; pointer-events: none; overflow: hidden; }
+.celebration-confetti i { position: absolute; left: var(--x); top: -20px; width: 10px; height: 18px; background: var(--confetti-color); border-radius: 3px; animation: victory-confetti var(--duration) var(--delay) linear infinite; }
+.celebration-confetti i:nth-child(3n) { border-radius: 50%; width: 12px; height: 12px; }
+@keyframes victory-confetti { from { transform: translateY(-10vh) rotate(var(--rotation)); } to { transform: translateY(110vh) rotate(calc(var(--rotation) + 240deg)); } }
+@media (max-width: 520px) { .sound-editor { padding: 15px; } .sound-upload { padding: 15px; } .sound-select { padding: 8px 10px; } .sound-item { gap: 8px; } .celebration-trophy { width: 88px; height: 88px; } }
+@media (prefers-reduced-motion: reduce) { .celebration-confetti i { animation: none; top: calc(var(--x)); opacity: .35; transform: rotate(var(--rotation)); } .celebration { backdrop-filter: none; } }
